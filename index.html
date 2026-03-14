@@ -79,11 +79,43 @@ input[type="search"]::placeholder { color: var(--dim); }
 .tile.on { background: var(--s2); box-shadow: inset 2px 0 0 var(--accent); }
 
 .tile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.tile-name { font-size: 13px; font-weight: 600; letter-spacing: -0.1px; line-height: 1.3; }
+.tile-name { font-size: 13px; font-weight: 600; letter-spacing: -0.1px; line-height: 1.3; flex: 1; min-width: 0; }
 .ttag {
   font-family: var(--mono); font-size: 9px; letter-spacing: 0.4px; text-transform: uppercase;
   padding: 2px 7px; border-radius: 3px; flex-shrink: 0; margin-top: 1px;
 }
+
+/* FAV STAR */
+.fav-btn {
+  width: 22px; height: 22px; flex-shrink: 0;
+  background: transparent; border: none; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.3; transition: opacity .15s, transform .15s;
+  margin-top: 0;
+}
+.fav-btn:hover { opacity: 0.8; transform: scale(1.15); }
+.fav-btn.on { opacity: 1; }
+.fav-btn svg { width: 14px; height: 14px; }
+.fav-btn.on svg { fill: #f4c430; stroke: #f4c430; }
+.fav-btn:not(.on) svg { fill: none; stroke: var(--sub); }
+
+/* FAV filter button — gold variant */
+.fb.fav-f { border-color: #4a3a10; color: #8a7020; }
+.fb.fav-f:hover { border-color: #f4c430; color: #f4c430; }
+.fb.fav-f.on { background: #f4c430; border-color: #f4c430; color: #1a1200; }
+
+/* Panel fav button */
+.panel-fav {
+  width: 30px; height: 30px; flex-shrink: 0;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.panel-fav:hover { background: var(--s3); }
+.panel-fav svg { width: 14px; height: 14px; stroke: var(--sub); fill: none; transition: all .15s; }
+.panel-fav.on { border-color: #4a3a10; background: #1e1800; }
+.panel-fav.on svg { stroke: #f4c430; fill: #f4c430; }
 .t-boucle     { background: #221550; color: #b89dff; }
 .t-timing     { background: #122010; color: #4ade80; }
 .t-valeur     { background: #241708; color: #fb923c; }
@@ -217,6 +249,7 @@ pre .nb { color: #fb923c; }
     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input type="search" id="search" placeholder="Rechercher..." autocomplete="off">
   </div>
+  <button class="fb fav-f" id="fav-filter" onclick="toggleFavFilter()">★ Favoris</button>
   <div class="filters" id="filters"></div>
 </div>
 
@@ -232,6 +265,9 @@ pre .nb { color: #fb923c; }
         <div class="ph-title" id="p-title"></div>
         <div class="ph-tag" id="p-tag"></div>
       </div>
+      <button class="panel-fav" id="panel-fav" onclick="toggleFav()">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </button>
       <button class="close" onclick="close_()">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
@@ -523,10 +559,39 @@ thisComp.layer(1).transform.opacity.valueAtTime(t);
    MOTEUR
    ═══════════════════════════════════════════════════ */
 const TAGS = { boucle:"Boucle", timing:"Timing", valeur:"Valeur", physique:"Physique", texte:"Texte", utilitaire:"Utilitaire" };
-let activeTag = null, searchVal = "", activeExpr = null;
+let activeTag = null, searchVal = "", activeExpr = null, favOnly = false;
 
 const $  = id => document.getElementById(id);
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ── FAVOURITES (localStorage) ── */
+const FAV_KEY = 'ae-expr-favs';
+function loadFavs() { try { return new Set(JSON.parse(localStorage.getItem(FAV_KEY)||'[]')); } catch { return new Set(); } }
+function saveFavs(s) { localStorage.setItem(FAV_KEY, JSON.stringify([...s])); }
+let favs = loadFavs();
+
+function isFav(e) { return favs.has(e.title); }
+
+function toggleFav() {
+  if (!activeExpr) return;
+  if (isFav(activeExpr)) favs.delete(activeExpr.title);
+  else favs.add(activeExpr.title);
+  saveFavs(favs);
+  syncPanelFav();
+  render();
+}
+
+function toggleFavFilter() {
+  favOnly = !favOnly;
+  $("fav-filter").classList.toggle("on", favOnly);
+  render();
+}
+
+function syncPanelFav() {
+  const btn = $("panel-fav");
+  if (!btn || !activeExpr) return;
+  btn.classList.toggle("on", isFav(activeExpr));
+}
 
 function hi(code) {
   return esc(code)
@@ -540,26 +605,44 @@ function filtered() {
   const q = searchVal.toLowerCase();
   return EXPRESSIONS.filter(e => {
     const mt = !activeTag || e.tag === activeTag;
+    const mf = !favOnly || isFav(e);
     const mq = !q || e.title.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q)
       || e.tag.includes(q) || (e.props||[]).some(p=>p.toLowerCase().includes(q));
-    return mt && mq;
+    return mt && mf && mq;
   });
 }
 
+function starSVG(filled) {
+  return `<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="${filled?'#f4c430':'none'}" stroke="${filled?'#f4c430':'currentColor'}"/></svg>`;
+}
+
 function render() {
-  $("counter").innerHTML = `<b>${EXPRESSIONS.length}</b> expressions`;
+  const favCount = EXPRESSIONS.filter(e=>isFav(e)).length;
+  $("counter").innerHTML = `<b>${EXPRESSIONS.length}</b> expressions${favCount ? ` · <span style="color:#f4c430">★ ${favCount}</span>` : ''}`;
   const list = filtered();
   const g = $("grid");
-  if (!list.length) { g.innerHTML = '<div class="empty">Aucune expression trouvée.</div>'; return; }
+  if (!list.length) {
+    g.innerHTML = `<div class="empty">${favOnly ? 'Aucun favori pour l\'instant — clique sur ★ pour en ajouter.' : 'Aucune expression trouvée.'}</div>`;
+    return;
+  }
   g.innerHTML = list.map(e => `
     <div class="tile${activeExpr===e?' on':''}" onclick="open_(${EXPRESSIONS.indexOf(e)})">
       <div class="tile-top">
         <div class="tile-name">${esc(e.title)}</div>
         <div class="ttag t-${e.tag}">${TAGS[e.tag]||e.tag}</div>
+        <button class="fav-btn${isFav(e)?' on':''}" onclick="event.stopPropagation();toggleFavTile('${esc(e.title)}')" title="${isFav(e)?'Retirer des favoris':'Ajouter aux favoris'}">${starSVG(isFav(e))}</button>
       </div>
       <div class="tile-desc">${esc(e.desc)}</div>
       ${e.props?`<div class="tile-props">${e.props.map(p=>`<span class="pchip">${esc(p)}</span>`).join('')}</div>`:''}
     </div>`).join('');
+}
+
+function toggleFavTile(title) {
+  if (favs.has(title)) favs.delete(title);
+  else favs.add(title);
+  saveFavs(favs);
+  if (activeExpr && activeExpr.title === title) syncPanelFav();
+  render();
 }
 
 function open_(idx) {
@@ -589,6 +672,7 @@ function open_(idx) {
   const cb = $("cpbtn");
   cb.classList.remove("ok");
   cb.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copier`;
+  syncPanelFav();
   $("overlay").classList.add("open");
   render();
 }
@@ -613,7 +697,6 @@ function copyNow() {
 }
 
 document.addEventListener("keydown", e => { if (e.key === "Escape") close_(); });
-
 $("search").addEventListener("input", e => { searchVal = e.target.value; render(); });
 
 const tags = [...new Set(EXPRESSIONS.map(e=>e.tag))];
@@ -621,7 +704,7 @@ $("filters").innerHTML = tags.map(t=>`<button class="fb" data-tag="${t}" onclick
 
 function ftag(t) {
   activeTag = activeTag===t ? null : t;
-  document.querySelectorAll(".fb").forEach(b=>b.classList.toggle("on",b.dataset.tag===activeTag));
+  document.querySelectorAll(".fb:not(.fav-f)").forEach(b=>b.classList.toggle("on",b.dataset.tag===activeTag));
   render();
 }
 
