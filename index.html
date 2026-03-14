@@ -160,6 +160,45 @@ pre .nb { color: #fb923c; }
 
 .hint { padding: 0.75rem 2rem; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 10px; color: var(--dim); }
 .hint code { background: var(--s2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; color: var(--acc-l); }
+
+/* HOW-TO BUBBLE */
+.how-box {
+  background: #1a1728;
+  border: 1px solid #332d52;
+  border-radius: 10px;
+  padding: 1rem 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.how-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.how-icon {
+  width: 20px; height: 20px;
+  background: #2d2550;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.how-icon svg { width: 11px; height: 11px; stroke: var(--acc-l); }
+.how-title { font-size: 11px; font-weight: 600; color: var(--acc-l); letter-spacing: 0.1px; }
+.how-steps { display: flex; flex-direction: column; gap: 7px; }
+.how-step  { display: flex; gap: 9px; align-items: flex-start; }
+.how-num   {
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  color: #6650b8; background: #2d2550; border-radius: 3px;
+  width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.how-text  { font-size: 12px; color: #a099cc; line-height: 1.55; }
+.how-text b { color: #c9c2f0; font-weight: 500; }
+.how-text code {
+  font-family: var(--mono); font-size: 10px; background: #2d2550;
+  padding: 1px 5px; border-radius: 3px; color: var(--acc-l);
+}
 </style>
 </head>
 <body>
@@ -200,6 +239,15 @@ pre .nb { color: #fb923c; }
     <div class="pbody">
       <div><div class="slabel">Description</div><div class="pdesc" id="p-desc"></div></div>
       <div><div class="slabel">Propriétés compatibles</div><div class="pprops" id="p-props"></div></div>
+      <div id="p-how-wrap" style="display:none">
+        <div class="how-box">
+          <div class="how-header">
+            <div class="how-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div>
+            <div class="how-title">Comment appliquer</div>
+          </div>
+          <div class="how-steps" id="p-how"></div>
+        </div>
+      </div>
       <div>
         <div class="slabel">Expression</div>
         <div class="cblock">
@@ -227,6 +275,12 @@ const EXPRESSIONS = [
     tag: "boucle",
     props: ["Position", "Rotation", "Opacité", "Échelle", "Tout"],
     desc: "Joue les clés A→B puis rebobine B→A en boucle infinie. Lit automatiquement toutes les clés de la propriété.",
+    how: [
+      "Dans la timeline, <b>pose au moins 2 clés</b> sur la propriété que tu veux boucler (ex. Position).",
+      "<b>Alt + clic</b> sur le chronomètre de la propriété pour ouvrir l'éditeur d'expressions.",
+      "<b>Colle l'expression</b> et clique ailleurs. La boucle démarre automatiquement dès la lecture.",
+      "Pour ajuster la vitesse du rebobinage, tu peux multiplier <code>dur</code> par un facteur dans la phase retour."
+    ],
     code: `(function(){
   var k = thisProperty.numKeys;
   if (k < 2) return value;
@@ -254,6 +308,12 @@ const EXPRESSIONS = [
     tag: "boucle",
     props: ["Position", "Rotation", "Opacité", "Échelle", "Tout"],
     desc: "Boucle classique après la dernière clé. La séquence repart depuis le début indéfiniment.",
+    how: [
+      "Pose tes clés normalement sur la propriété.",
+      "<b>Alt + clic</b> sur le chronomètre de la propriété pour ouvrir l'éditeur d'expressions.",
+      "Colle <code>loopOut(\"cycle\")</code>. La séquence boucle à partir de la dernière clé.",
+      "Fonctionne sur n'importe quelle propriété animée : position, rotation, opacité, etc."
+    ],
     code: `loopOut("cycle");`
   },
   {
@@ -261,6 +321,12 @@ const EXPRESSIONS = [
     tag: "boucle",
     props: ["Position", "Rotation", "Opacité", "Échelle", "Tout"],
     desc: "Boucle aller-retour native AE. Alternative légère au Vine loop, sans code custom.",
+    how: [
+      "Pose tes clés sur la propriété (début et fin du mouvement).",
+      "<b>Alt + clic</b> sur le chronomètre pour ouvrir l'éditeur d'expressions.",
+      "Colle <code>loopOut(\"pingpong\")</code>. AE joue les clés en aller-retour automatiquement.",
+      "Différence avec le Vine loop : ici le retour suit exactement la même courbe d'animation (easing inclus)."
+    ],
     code: `loopOut("pingpong");`
   },
   {
@@ -268,6 +334,12 @@ const EXPRESSIONS = [
     tag: "boucle",
     props: ["Position", "Rotation", "Opacité", "Tout"],
     desc: "Boucle dans les deux directions — avant la première clé ET après la dernière.",
+    how: [
+      "Pose tes clés sur la propriété.",
+      "<b>Alt + clic</b> sur le chronomètre pour ouvrir l'éditeur d'expressions.",
+      "Colle les deux lignes. <code>loopIn</code> gère le début du calque, <code>loopOut</code> gère la fin.",
+      "Utile si ton calque démarre au milieu de la comp et que tu veux que la boucle soit active dès le départ."
+    ],
     code: `loopIn("cycle");
 loopOut("cycle");`
   },
@@ -276,6 +348,12 @@ loopOut("cycle");`
     tag: "valeur",
     props: ["Position", "Rotation", "Opacité"],
     desc: "Tremblement aléatoire continu. Contrôle la fréquence (oscillations/sec) et l'amplitude en px ou degrés.",
+    how: [
+      "<b>Pas besoin de clés</b> — le wiggle fonctionne sans animation préalable.",
+      "<b>Alt + clic</b> sur le chronomètre de la propriété (ex. Position) pour ouvrir l'éditeur.",
+      "Colle l'expression. Ajuste <code>freq</code> (vitesse) et <code>amp</code> (intensité) selon ton besoin.",
+      "Sur une propriété <b>2D comme Position</b>, le wiggle agite les deux axes. Sur Rotation, il oscille en degrés."
+    ],
     code: `var freq = 2;   // oscillations par seconde
 var amp  = 20;  // amplitude en px ou degrés
 wiggle(freq, amp);`
@@ -285,6 +363,12 @@ wiggle(freq, amp);`
     tag: "valeur",
     props: ["Position", "Rotation"],
     desc: "Wiggle reproductible avec un seed unique par calque. Chaque instance a un mouvement différent mais stable.",
+    how: [
+      "<b>Duplique ton calque</b> plusieurs fois — chaque copie aura automatiquement un <code>index</code> différent.",
+      "<b>Alt + clic</b> sur le chronomètre et colle l'expression sur chaque calque (ou via un calque master).",
+      "Le <code>seedRandom(index, true)</code> garantit que chaque calque a un mouvement unique mais <b>toujours identique</b> à chaque render.",
+      "Remplace <code>index</code> par un nombre fixe si tu veux forcer un mouvement spécifique sur un calque."
+    ],
     code: `var freq = 2;
 var amp  = 15;
 var seed = index; // unique par calque
@@ -296,6 +380,12 @@ wiggle(freq, amp);`
     tag: "valeur",
     props: ["Position", "Rotation", "Opacité"],
     desc: "Mouvement fluide et régulier basé sur un sinus. Contrôle précis de la vitesse, l'amplitude et la phase.",
+    how: [
+      "<b>Pas besoin de clés.</b> Le sinus génère la valeur en continu à partir du temps.",
+      "<b>Alt + clic</b> sur la propriété cible et colle l'expression.",
+      "Pour <b>Position 2D</b>, remplace la dernière ligne par <code>[value[0], value[1] + val]</code>.",
+      "Pour décaler plusieurs calques, change <code>phase</code> sur chacun — ex. <code>index * Math.PI / 2</code>."
+    ],
     code: `var freq  = 1;   // cycles par seconde
 var amp   = 50;  // amplitude
 var phase = 0;   // décalage en radians
@@ -311,6 +401,12 @@ value + val;`
     tag: "physique",
     props: ["Position", "Échelle", "Rotation"],
     desc: "Rebond élastique après le dernier mouvement. Simule une inertie physique réaliste sur toute propriété animée.",
+    how: [
+      "<b>Anime ta propriété normalement</b> avec des clés (ex. un calque qui se déplace de A à B).",
+      "<b>Alt + clic</b> sur le chronomètre et colle l'expression — elle s'applique par-dessus tes clés.",
+      "Ajuste <code>amp</code> (intensité du rebond), <code>freq</code> (vitesse d'oscillation) et <code>decay</code> (rapidité d'amortissement).",
+      "Si le rebond est trop fort, <b>diminue</b> <code>amp</code>. Trop rapide ? <b>Diminue</b> <code>freq</code>. Trop long ? <b>Augmente</b> <code>decay</code>."
+    ],
     code: `var amp   = 0.06;  // amplitude du rebond
 var freq  = 2.5;   // fréquence
 var decay = 4.0;   // amortissement
@@ -333,6 +429,12 @@ else {
     tag: "texte",
     props: ["Source Text"],
     desc: "Affiche un nombre qui monte entre deux clés. Pose des clés sur Source Text, le compteur s'anime automatiquement.",
+    how: [
+      "Crée un calque texte. Dans la timeline, <b>expose la propriété Source Text</b> (touche U après avoir sélectionné le calque).",
+      "Pose <b>2 clés</b> sur Source Text (peu importe la valeur écrite, elles servent juste de marqueurs de temps).",
+      "<b>Alt + clic</b> sur Source Text pour ouvrir l'éditeur et colle l'expression.",
+      "Change <code>startVal</code> et <code>endVal</code> pour définir les bornes du compteur. <code>decimals</code> contrôle les décimales affichées."
+    ],
     code: `var startVal = 0;
 var endVal   = 100;
 var decimals = 0;   // chiffres après la virgule
@@ -349,6 +451,12 @@ current.toFixed(decimals);`
     tag: "valeur",
     props: ["Position", "Rotation", "Opacité", "Tout"],
     desc: "Récupère la valeur d'une propriété d'un autre calque. Liaison directe sans parenting.",
+    how: [
+      "Note exactement le <b>nom du calque source</b> tel qu'il apparaît dans la timeline.",
+      "<b>Alt + clic</b> sur la propriété du calque cible et colle l'expression.",
+      "Remplace <code>\"NOM_DU_CALQUE\"</code> par le nom exact, et <code>transform.position</code> par la propriété voulue.",
+      "Exemples de propriétés : <code>transform.rotation</code>, <code>transform.opacity</code>, <code>transform.scale</code>."
+    ],
     code: `var src = thisComp.layer("NOM_DU_CALQUE");
 src.transform.position; // remplace par la propriété voulue`
   },
@@ -357,6 +465,12 @@ src.transform.position; // remplace par la propriété voulue`
     tag: "timing",
     props: ["Tout"],
     desc: "Retourne le temps en secondes, en frames ou formaté mm:ss. Utile pour piloter des animations procédurales.",
+    how: [
+      "<b>Alt + clic</b> sur n'importe quelle propriété numérique ou Source Text.",
+      "Utilise <code>time</code> seul pour des calculs en secondes — c'est la variable de temps globale d'AE.",
+      "Pour un <b>affichage visuel</b> du timecode, colle le bloc formaté mm:ss sur un calque texte.",
+      "Combine avec d'autres expressions : par exemple <code>Math.sin(time)</code> oscille naturellement à 1 cycle/seconde."
+    ],
     code: `// Temps en secondes
 time;
 
@@ -373,6 +487,12 @@ m + ":" + ("0" + (s % 60)).slice(-2);`
     tag: "utilitaire",
     props: ["Position", "Rotation", "Opacité", "Tout"],
     desc: "Valeur aléatoire unique par calque, fixe dans le temps. Idéal pour décaler des instances sans animer.",
+    how: [
+      "<b>Duplique ton calque</b> autant de fois que nécessaire — chaque copie a un <code>index</code> automatique.",
+      "<b>Alt + clic</b> sur la propriété cible (ex. Rotation) sur <b>tous les calques</b> et colle l'expression.",
+      "Chaque calque reçoit une valeur différente entre <code>minVal</code> et <code>maxVal</code>, stable au rendu.",
+      "Le <code>true</code> dans <code>seedRandom(index, true)</code> est crucial — sans lui, la valeur change à chaque frame."
+    ],
     code: `var minVal = 0;
 var maxVal = 360;
 
@@ -384,6 +504,12 @@ random(minVal, maxVal);`
     tag: "timing",
     props: ["Opacité", "Position", "Tout"],
     desc: "Décale l'animation de chaque calque selon son index. Crée des cascades sans dupliquer les clés.",
+    how: [
+      "Anime le <b>calque 1</b> (ou le calque source) avec les clés que tu veux répliquer en cascade.",
+      "Sur les <b>autres calques</b>, <b>Alt + clic</b> sur la même propriété et colle l'expression.",
+      "Chaque calque lit la valeur du calque 1 avec un décalage temporel de <code>delay * (index - 1)</code>.",
+      "Change <code>delay</code> pour resserrer ou espacer la cascade. Change <code>transform.opacity</code> si ta propriété est différente."
+    ],
     code: `var delay = 0.1; // secondes entre chaque calque
 var offset = (index - 1) * delay;
 var t = time - offset;
@@ -446,6 +572,19 @@ function open_(idx) {
   pt.className = `ph-tag ttag t-${e.tag}`;
   $("p-desc").textContent = e.desc;
   $("p-props").innerHTML = (e.props||[]).map(p=>`<span class="pprop">${esc(p)}</span>`).join('');
+
+  const howWrap = $("p-how-wrap");
+  if (e.how && e.how.length) {
+    $("p-how").innerHTML = e.how.map((s, i) => `
+      <div class="how-step">
+        <div class="how-num">${i+1}</div>
+        <div class="how-text">${s}</div>
+      </div>`).join('');
+    howWrap.style.display = 'block';
+  } else {
+    howWrap.style.display = 'none';
+  }
+
   $("p-code").innerHTML = hi(e.code);
   const cb = $("cpbtn");
   cb.classList.remove("ok");
